@@ -1,7 +1,0 @@
-numpy
-pandas
-matplotlib
-seaborn
-scikit-learn
-umap-learn==0.5.11
-numba==0.60.0
