@@ -62,9 +62,7 @@ The Python pipeline has been developed and tested **exclusively on Google Colab*
 Because the dependencies (`numpy`, `pandas`, `scikit-learn`, `umap-learn`, `numba`, `matplotlib`, `seaborn`) are all cross-platform Python packages, the pipeline is expected to run on any standard Python 3 environment (Linux, macOS, Windows) with `requirements.txt` installed. Users wishing to run the code locally are welcome to do so, but should be aware that the exact pinned versions of `umap-learn` and `numba` may interact differently with their local Python and BLAS libraries. **For maximum reproducibility, we recommend running the Python pipeline on Google Colab.**
 
 The MATLAB pipeline has been tested on:
-- MATLAB R2021a or later with the Image Processing Toolbox
-
-> ※ 실제 테스트하신 MATLAB 버전·OS가 있다면 더 구체적으로 명시해주세요 (예: "Tested on MATLAB R2023b under Windows 11")
+- MATLAB R2024b or later with the Image Processing Toolbox
 
 ### Hardware requirements
 
@@ -90,8 +88,6 @@ pip install -r requirements.txt
 ```
 
 **Typical install time on Google Colab**: ~1–2 minutes (most dependencies are pre-installed on the Colab runtime; only `umap-learn` and pinned versions of `numba` need to be installed). On a local machine with a fresh Python environment, expect ~3–5 minutes depending on internet connection.
-
-> ※ 실제 측정값으로 교체 부탁드립니다
 
 ### MATLAB pipeline
 
@@ -131,8 +127,6 @@ python python_pipeline/analysis_pipeline.py
 - Full notebook execution: ~5–10 minutes
 - Most time is spent on densMAP embedding (~3–5 min) and Ridge model cross-validation (~2 min)
 
-> ※ 실제 측정값으로 교체 부탁드립니다
-
 ### MATLAB pipeline demo
 
 A demo `.tif` image stack is provided in `data/demo_image_stack.tif`.
@@ -152,8 +146,6 @@ A demo `.tif` image stack is provided in `data/demo_image_stack.tif`.
 
 **Expected run time on demo image**:
 - ~2–3 minutes per image stack on a standard desktop
-
-> ※ 실제 측정값으로 교체 부탁드립니다
 
 ---
 
