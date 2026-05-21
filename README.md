@@ -15,8 +15,6 @@ The repository is organized into two complementary, sequentially connected compo
 
 2. **Python ML Pipeline** (`python_pipeline/`) — performs physicochemical sequence embedding, projects the combinatorial mutant space onto a topology-preserving 2D landscape via densMAP, and trains an additive Ridge regression model on low-order (≤ double) mutants to predict and recover top-1% champion variants in both affinity and productivity.
 
-Together, the two components form a complete pipeline from raw `.tif` fluorescence images to predicted champion antibody sequences.
-
 ---
 
 ## Repository Structure
