@@ -52,7 +52,7 @@ PPI-Landscape-2025/
 `umap-learn` and `numba` are pinned to the versions used during development to ensure reproducibility of the densMAP embedding step. Other dependencies follow whichever versions are resolved by `pip` at install time; this matches the behavior expected on a fresh Google Colab runtime.
 
 **MATLAB pipeline**:
-- MATLAB R2021a or later
+- MATLAB R2024b or later
 - Image Processing Toolbox
 
 ### Tested environment
@@ -91,7 +91,7 @@ pip install -r requirements.txt
 
 ### MATLAB pipeline
 
-No separate installation step is required beyond having MATLAB R2021a+ with the Image Processing Toolbox installed. Simply clone the repository and navigate to `matlab_scripts/` within MATLAB.
+No separate installation step is required beyond having MATLAB R2024b+ with the Image Processing Toolbox installed. Simply clone the repository and navigate to `matlab_scripts/` within MATLAB.
 
 **Typical setup time**: < 1 minute (assuming MATLAB and the Image Processing Toolbox are already installed).
 
