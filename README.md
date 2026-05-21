@@ -7,13 +7,21 @@ This repository contains the data analysis, image processing, and predictive mod
 
 ## Overview
 
-This repository provides an end-to-end computational framework for antibody library optimization that integrates **quantitative single-molecule image analysis** with **machine learning–guided sequence space navigation**. By coupling experimental biophysical measurements with predictive modeling of the combinatorial fitness landscape, the pipeline establishes a rational strategy to identify top-tier antibody variants without exhaustive experimental screening.
+This repository hosts **two independent computational tools** developed for the accompanying manuscript on antibody library analysis. The two tools are released together for convenience but are **not coupled**: they address different problems, take different inputs, and can be used entirely separately.
 
-The repository is organized into two complementary, sequentially connected components:
+### Tool 1 — MATLAB Single-Molecule Image Analysis GUI (`matlab_scripts/`)
 
-1. **MATLAB Image Analysis GUI** (`matlab_scripts/`) — a batch-processing graphical application that quantifies single-molecule fluorescence images. It automatically detects spots, classifies their oligomeric state, applies Non-Specific Binding (NSB) correction, and exports per-variant binding and expression measurements. This component generates the *experimental input* for the downstream ML pipeline.
+A batch-processing graphical application for quantifying single-molecule fluorescence images (`.tif`). The tool automatically detects fluorescent spots, extracts per-spot intensities, performs image-level background subtraction and Non-Specific Binding (NSB) correction, and classifies each spot's oligomeric state (Monomer / Trimer / Trimer+) by calibrating against a monomeric reference.
 
-2. **Python ML Pipeline** (`python_pipeline/`) — performs physicochemical sequence embedding, projects the combinatorial mutant space onto a topology-preserving 2D landscape via densMAP, and trains an additive Ridge regression model on low-order (≤ double) mutants to predict and recover top-1% champion variants in both affinity and productivity.
+In the manuscript, this tool was used to quantify fluorescent spots and verify that **TNF-α bound to Adalimumab and its variants existed in the expected trimeric state**, providing the experimental ground truth for downstream interpretation. The tool itself is general-purpose and can be applied to any single-molecule fluorescence experiment requiring spot detection and oligomeric-state classification.
+
+### Tool 2 — Python ML-Guided Library Navigation Pipeline (`python_pipeline/`)
+
+A Python pipeline that uses experimental measurements of **single and double mutants** to train an additive Ridge regression model. The model learns the contribution (weight) of each single–amino-acid substitution from this low-order data alone, and is then used to predict the fitness of the full combinatorial library *in silico*.
+
+The key result enabled by this tool is that **global top-tier variants can be recovered by screening only a drastically reduced subset of the combinatorial library**, rather than exhaustively measuring every combination. The pipeline also projects the combinatorial sequence space onto a topology-preserving 2D landscape via densMAP (UMAP) and categorizes variants by KMeans clustering to visualize the fitness landscape.
+
+This tool takes a tabular CSV/Excel file of variant measurements as input — its measurements need not have been produced by Tool 1.
 
 ---
 
@@ -21,18 +29,20 @@ The repository is organized into two complementary, sequentially connected compo
 
 ```
 PPI-Landscape-2025/
-├── matlab_scripts/
-│   └── spotAnalysisApp_V35_1_Final.m        # MATLAB GUI for single-molecule fluorescence image analysis
-├── python_pipeline/
+├── matlab_scripts/                          # Tool 1: independent MATLAB image analysis GUI
+│   └── spotAnalysisApp_V35_1_Final.m        # GUI app for single-molecule fluorescence image analysis
+├── python_pipeline/                         # Tool 2: independent Python ML pipeline
 │   ├── analysis_pipeline.py                 # Command-line / IDE executable version
 │   └── Analysis_Pipeline_Cleaned.ipynb      # Jupyter / Colab notebook version (same logic)
-├── data/                                    # Sample datasets for demo runs
-│   ├── demo_image_stack.tif                 # Example single-molecule fluorescence image (MATLAB demo)
-│   └── demo_library_measurements.csv        # Example processed library data (Python demo)
+├── data/                                    # Sample datasets for demo runs (per-tool)
+│   ├── demo_image_stack.tif                 # Example fluorescence image (MATLAB demo input)
+│   └── demo_library_measurements.csv        # Example tabular variant measurements (Python demo input)
 ├── LICENSE                                  # MIT License
 ├── README.md                                # Project overview and instructions
-└── requirements.txt                         # Python dependencies (pinned versions)
+└── requirements.txt                         # Python dependencies (applies to Tool 2 only)
 ```
+
+The two tools are released together for distribution convenience but operate independently. Users interested in only one of them need not install or run the other.
 
 ---
 
@@ -192,10 +202,17 @@ These estimates are based on the cost of the underlying image-processing operati
 
 ### Reproduction of manuscript results *(optional)*
 
-To reproduce the quantitative results reported in the manuscript:
+The two tools contribute to different parts of the manuscript and are reproduced independently.
+
+**Python ML pipeline results** (combinatorial library navigation and top-variant recovery curves):
 1. Obtain the full processed dataset from the corresponding author (see **Data Availability** below).
 2. Place it in `data/full_library_measurements.csv`.
 3. Run `Analysis_Pipeline_Cleaned.ipynb` end-to-end with default parameters and fixed random seeds (already set in Section 1 of the notebook).
+
+**MATLAB image analysis results** (TNF-α trimer-state quantification on Adalimumab variants):
+1. Obtain the raw `.tif` image stacks from the corresponding author (see **Data Availability** below).
+2. Launch `spotAnalysisApp_V35_1_Final` and load the image directory.
+3. Use the parameter values reported in the manuscript Methods section to reproduce the reported spot statistics.
 
 ---
 
@@ -210,16 +227,16 @@ Both `Analysis_Pipeline_Cleaned.ipynb` and `analysis_pipeline.py` are organized 
 
 ### Key methodological features
 
-- **Biological preprocessing & filtering** — curates experimental measurements by strictly enforcing biological constraints (e.g., masking occupancy/affinity values for variants that fail to express).
-- **Physicochemical vectorization & densMAP embedding** — transforms combinatorial mutations into high-dimensional numerical vectors based on position-specific physicochemical properties (Kyte–Doolittle hydropathy, residue volume, and isoelectric point). The sequence space is then projected onto a topology-preserving 2D landscape with `densMAP` (UMAP) and systematically categorized via KMeans clustering.
-- **ML-guided predictive recovery** — bypasses brute-force screening by training an additive Ridge regression model exclusively on low-order (≤ double) mutants. By capturing fundamental pairwise epistatic interactions, the model drastically condenses the search space and accurately recovers the global top 1% champions in both affinity and productivity.
+- **Biological preprocessing & filtering** — curates experimental measurements by strictly enforcing biological constraints (e.g., masking occupancy/affinity values for variants that fail to express, so non-expressing variants do not contaminate the binding signal).
+- **Physicochemical vectorization & densMAP embedding** — transforms combinatorial mutations into high-dimensional numerical vectors based on position-specific physicochemical properties (Kyte–Doolittle hydropathy, residue volume, and isoelectric point). The sequence space is then projected onto a topology-preserving 2D landscape with `densMAP` (UMAP) and systematically categorized via KMeans clustering, allowing visual inspection of the fitness landscape.
+- **ML-guided top-variant recovery from reduced screening** — the core insight is that a Ridge regression model trained **only on single and double mutants** can learn per-position amino-acid weights that capture the fundamental contributions and pairwise epistatic interactions driving fitness. Using these learned weights, the model predicts the fitness of the full combinatorial library *in silico* and ranks variants accordingly. This enables effective recovery of the global top 1% variants in both affinity and productivity **without exhaustive measurement of the combinatorial library** — only the low-order (≤ double) mutant subset needs to be experimentally screened.
 
 ### MATLAB image analysis key features
 
-- **Automated spot detection** — identifies GFP spots using adjustable parameters (Gaussian smoothing, adaptive sensitivity, morphological opening, and area filtering).
-- **Intensity profiling & oligomeric classification** — extracts mean intensities, performs image-level background subtraction, and calibrates against an internal/external monomeric reference to classify spots into distinct states (Monomer, Trimer, Trimer+).
-- **NSB correction & quality control** — automatically corrects for Non-Specific Binding (NSB) using control wells and provides a comprehensive QC summary.
-- **Batch export** — generates detailed `.xlsx` reports containing both aggregated statistics and raw intensity distributions.
+- **Automated spot detection** — identifies fluorescent spots using adjustable parameters (Gaussian smoothing, adaptive sensitivity, morphological opening, and area filtering).
+- **Intensity profiling & oligomeric classification** — extracts mean intensities, performs image-level background subtraction, and calibrates against an internal/external monomeric reference to classify spots into distinct oligomeric states (Monomer, Trimer, Trimer+). In the accompanying manuscript, this was used to confirm that TNF-α bound to Adalimumab and its variants existed predominantly as trimers.
+- **NSB correction & quality control** — automatically corrects for Non-Specific Binding (NSB) using user-designated control wells and provides a comprehensive QC summary (saturated spots, specific spot counts, spot-area distributions).
+- **Batch export** — generates detailed `.xlsx` reports containing both aggregated per-well statistics and raw intensity distributions for downstream analysis.
 
 ---
 
