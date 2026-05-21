@@ -35,8 +35,16 @@ PPI-Landscape-2025/
 │   ├── analysis_pipeline.py                 # Command-line / IDE executable version
 │   └── Analysis_Pipeline_Cleaned.ipynb      # Jupyter / Colab notebook version (same logic)
 ├── data/                                    # Sample datasets for demo runs (per-tool)
-│   ├── demo_image_stack.tif                 # Example fluorescence image (MATLAB demo input)
-│   └── demo_library_measurements.csv        # Example tabular variant measurements (Python demo input)
+│   ├── demo_image_root/                     # MATLAB demo: root folder of fluorescence images
+│   │   ├── Sample_01/                       #   each subfolder = one well/condition, containing .tif files
+│   │   │   ├── image_001.tif
+│   │   │   ├── image_002.tif
+│   │   │   └── ...
+│   │   ├── Sample_02/
+│   │   │   └── ...
+│   │   └── Control_NSB/                     #   subfolder designated as NSB control
+│   │       └── ...
+│   └── demo_library_measurements.csv        # Python demo: tabular variant measurements
 ├── LICENSE                                  # MIT License
 ├── README.md                                # Project overview and instructions
 └── requirements.txt                         # Python dependencies (applies to Tool 2 only)
@@ -155,14 +163,15 @@ These estimates are based on the algorithmic complexity of each stage on the def
 
 ### MATLAB pipeline demo
 
-A demo `.tif` image stack is provided in `data/demo_image_stack.tif`.
+A demo dataset is provided as a **root folder** at `data/demo_image_root/`, containing several subfolders. Each subfolder represents one well or condition and holds multiple `.tif` images. This structure is required by the GUI: the application expects a root folder whose immediate subfolders correspond to individual samples/wells.
 
 1. Open MATLAB and navigate to `matlab_scripts/`.
 2. Launch the application:
    ```matlab
    spotAnalysisApp_V35_1_Final
    ```
-3. In the GUI, load `../data/demo_image_stack.tif` and run with default parameters.
+3. In the GUI, click **Select Root** and choose the `data/demo_image_root/` folder. The subfolders inside it will automatically populate the **Process** / **NSB Control** / **Display** list panels.
+4. Select the subfolders to process and the subfolder to use as NSB control, then run the analysis with default parameters.
 
 **Expected output**:
 - An `.xlsx` report containing:
@@ -194,11 +203,22 @@ These estimates are based on the cost of the underlying image-processing operati
 
 ### Running the MATLAB pipeline on your own data
 
-1. Place your `.tif` image stacks in a working directory.
+1. Organize your `.tif` image files into a **root folder containing one subfolder per well/condition**, with the `.tif` images for that well/condition placed inside the corresponding subfolder. Subfolder names starting with `.` or `_`, and any folder named `_processed`, are automatically ignored by the GUI.
+   ```
+   my_experiment/                ← root folder you will select in the GUI
+   ├── Well_A1/
+   │   ├── img_001.tif
+   │   └── img_002.tif
+   ├── Well_A2/
+   │   └── ...
+   └── NSB_Control/
+       └── ...
+   ```
 2. Launch `spotAnalysisApp_V35_1_Final` in MATLAB.
-3. Configure detection parameters (Gaussian smoothing radius, adaptive sensitivity, morphological opening, area filter) using the GUI sliders.
-4. Specify control wells for NSB correction.
-5. Run batch processing; results are exported as `.xlsx` to a user-specified output directory.
+3. Click **Select Root** and choose the root folder of your experiment. Subfolders will appear in the **Process** / **NSB Control** / **Display** list panels.
+4. Configure detection parameters (Gaussian smoothing radius, adaptive sensitivity, morphological opening, area filter) using the GUI sliders. The live preview pane assists with parameter tuning before batch processing.
+5. Select which subfolders to use as NSB controls and (optionally) as the internal monomer anchor for calibration.
+6. Run batch processing; results are exported as `.xlsx` to a user-specified output directory.
 
 ### Reproduction of manuscript results *(optional)*
 
@@ -210,8 +230,8 @@ The two tools contribute to different parts of the manuscript and are reproduced
 3. Run `Analysis_Pipeline_Cleaned.ipynb` end-to-end with default parameters and fixed random seeds (already set in Section 1 of the notebook).
 
 **MATLAB image analysis results** (TNF-α trimer-state quantification on Adalimumab variants):
-1. Obtain the raw `.tif` image stacks from the corresponding author (see **Data Availability** below).
-2. Launch `spotAnalysisApp_V35_1_Final` and load the image directory.
+1. Obtain the raw `.tif` image stacks organized in the required root/subfolder structure from the corresponding author (see **Data Availability** below).
+2. Launch `spotAnalysisApp_V35_1_Final` and use **Select Root** to load the root directory.
 3. Use the parameter values reported in the manuscript Methods section to reproduce the reported spot statistics.
 
 ---
