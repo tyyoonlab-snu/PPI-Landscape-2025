@@ -36,11 +36,11 @@ PPI-Landscape-2025/
 │   └── Analysis_Pipeline_Cleaned.ipynb      # Jupyter / Colab notebook version (same logic)
 ├── data/                                    # Sample datasets for demo runs (per-tool)
 │   ├── demo_image_root/                     # MATLAB demo: root folder of fluorescence images
-│   │   ├── Sample_01/                       #   each subfolder = one well/condition, containing .tif files
-│   │   │   ├── image_001.tif
-│   │   │   ├── image_002.tif
+│   │   ├── Sample_Adalimumab_WT/            #   each subfolder = one well/condition, containing .tif files
+│   │   │   ├── WT_07_AVG.tif
+│   │   │   ├── WT_08_AVG.tif
 │   │   │   └── ...
-│   │   ├── Sample_02/
+│   │   ├── Sample_Variant/
 │   │   │   └── ...
 │   │   └── Control_NSB/                     #   subfolder designated as NSB control
 │   │       └── ...
