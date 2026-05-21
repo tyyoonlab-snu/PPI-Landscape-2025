@@ -1,4 +1,4 @@
-# Sequence Embedding and Machine Learning-Guided Antibody Library Analysis
+# Single-Molecule Image Analysis and ML-Guided Navigation of Antibody Library Landscapes
 
 This repository contains the data analysis, image processing, and predictive modeling code for the manuscript:
 > **"Landscape-scale navigation unlocks antibody CDR structural logic for AI-guided rescue and therapeutic optimization"** *(Under Review)*
@@ -7,12 +7,15 @@ This repository contains the data analysis, image processing, and predictive mod
 
 ## Overview
 
-This repository provides a complete computational framework for antibody library optimization, spanning from raw single-molecule image quantification to AI-driven sequence design. By integrating single-molecule biophysics with machine learning–guided predictive modeling, we establish a rational strategy to analyze fitness landscapes and discover top-tier variants without the need for exhaustive experimental screening.
+This repository provides an end-to-end computational framework for antibody library optimization that integrates **quantitative single-molecule image analysis** with **machine learning–guided sequence space navigation**. By coupling experimental biophysical measurements with predictive modeling of the combinatorial fitness landscape, the pipeline establishes a rational strategy to identify top-tier antibody variants without exhaustive experimental screening.
 
-The repository is organized into two complementary components:
+The repository is organized into two complementary, sequentially connected components:
 
-1. **MATLAB Image Analysis GUI** (`matlab_scripts/`) — processes single-molecule fluorescence images to extract intensity profiles and quantify antigen-binding occupancy.
-2. **Python ML Pipeline** (`python_pipeline/`) — performs physicochemical sequence embedding and trains predictive models to navigate the combinatorial fitness landscape.
+1. **MATLAB Image Analysis GUI** (`matlab_scripts/`) — a batch-processing graphical application that quantifies single-molecule fluorescence images. It automatically detects spots, classifies their oligomeric state, applies Non-Specific Binding (NSB) correction, and exports per-variant binding and expression measurements. This component generates the *experimental input* for the downstream ML pipeline.
+
+2. **Python ML Pipeline** (`python_pipeline/`) — performs physicochemical sequence embedding, projects the combinatorial mutant space onto a topology-preserving 2D landscape via densMAP, and trains an additive Ridge regression model on low-order (≤ double) mutants to predict and recover top-1% champion variants in both affinity and productivity.
+
+Together, the two components form a complete pipeline from raw `.tif` fluorescence images to predicted champion antibody sequences.
 
 ---
 
@@ -52,7 +55,8 @@ PPI-Landscape-2025/
 `umap-learn` and `numba` are pinned to the versions used during development to ensure reproducibility of the densMAP embedding step. Other dependencies follow whichever versions are resolved by `pip` at install time; this matches the behavior expected on a fresh Google Colab runtime.
 
 **MATLAB pipeline**:
-- MATLAB R2024b or later
+- MATLAB R2024b (tested) with the Image Processing Toolbox
+- Likely compatible with earlier versions (R2021a+) since no R2024b-specific features are used, but this has not been independently verified
 - Image Processing Toolbox
 
 ### Tested environment
@@ -61,8 +65,8 @@ The Python pipeline has been developed and tested **exclusively on Google Colab*
 
 Because the dependencies (`numpy`, `pandas`, `scikit-learn`, `umap-learn`, `numba`, `matplotlib`, `seaborn`) are all cross-platform Python packages, the pipeline is expected to run on any standard Python 3 environment (Linux, macOS, Windows) with `requirements.txt` installed. Users wishing to run the code locally are welcome to do so, but should be aware that the exact pinned versions of `umap-learn` and `numba` may interact differently with their local Python and BLAS libraries. **For maximum reproducibility, we recommend running the Python pipeline on Google Colab.**
 
-The MATLAB pipeline has been tested on:
-- MATLAB R2024b or later with the Image Processing Toolbox
+The MATLAB pipeline has been developed and tested on:
+- **MATLAB R2024b** with the Image Processing Toolbox
 
 ### Hardware requirements
 
@@ -87,11 +91,11 @@ cd PPI-Landscape-2025
 pip install -r requirements.txt
 ```
 
-**Typical install time on Google Colab**: ~1–2 minutes (most dependencies are pre-installed on the Colab runtime; only `umap-learn` and pinned versions of `numba` need to be installed). On a local machine with a fresh Python environment, expect ~3–5 minutes depending on internet connection.
+**Typical install time on Google Colab**: ~30–60 seconds. Most dependencies (`numpy`, `pandas`, `scikit-learn`, `matplotlib`, `seaborn`) are pre-installed in the Colab runtime, so `pip install -r requirements.txt` effectively only needs to install `umap-learn==0.5.11` and ensure `numba==0.60.0` is present. On a fresh local Python environment, expect ~2–4 minutes for full dependency resolution and installation.
 
 ### MATLAB pipeline
 
-No separate installation step is required beyond having MATLAB R2024b+ with the Image Processing Toolbox installed. Simply clone the repository and navigate to `matlab_scripts/` within MATLAB.
+No separate installation step is required beyond having MATLAB R2024b (or a compatible version) with the Image Processing Toolbox installed. Simply clone the repository and navigate to `matlab_scripts/` within MATLAB.
 
 **Typical setup time**: < 1 minute (assuming MATLAB and the Image Processing Toolbox are already installed).
 
@@ -123,9 +127,23 @@ python python_pipeline/analysis_pipeline.py
 - Tabular summary of cluster-wise mean affinity / productivity statistics (printed to console or notebook cell)
 - A `results/` directory containing PNG figures and CSV tables of the embedding coordinates and model predictions
 
-**Expected run time on demo data** (default Google Colab CPU runtime):
-- Full notebook execution: ~5–10 minutes
-- Most time is spent on densMAP embedding (~3–5 min) and Ridge model cross-validation (~2 min)
+**Expected run time on demo data** (default Google Colab CPU runtime, dataset size–dependent):
+
+| Pipeline stage | Time (approximate) |
+| --- | --- |
+| Data loading & preprocessing | < 5 seconds |
+| densMAP embedding (`n_neighbors=50`, `densmap=True`) | ~30 sec – 3 min |
+| KMeans clustering (`k=5`, on 2D coordinates) | < 5 seconds |
+| Ridge regression + recovery curve (100 ratios × 2 metrics) | ~10–30 seconds |
+| Figure rendering & saving | < 5 seconds |
+| **Total (end-to-end)** | **~1–5 minutes** |
+
+The densMAP step is the dominant cost and scales with the number of unique variants. For reference:
+- ~1,000 variants → end-to-end ~1 minute
+- ~5,000 variants → end-to-end ~3 minutes
+- ~20,000 variants → end-to-end ~5–10 minutes (densMAP alone may take 5–8 minutes)
+
+These estimates are based on the algorithmic complexity of each stage on the default Colab CPU runtime; actual values may vary by ±50% depending on Colab backend allocation.
 
 ### MATLAB pipeline demo
 
@@ -144,8 +162,12 @@ A demo `.tif` image stack is provided in `data/demo_image_stack.tif`.
   - Raw intensity distributions for downstream analysis
   - QC summary (saturated spots, specific spot counts, NSB correction values)
 
-**Expected run time on demo image**:
-- ~2–3 minutes per image stack on a standard desktop
+**Expected run time** (per image / per dataset):
+- Single `.tif` image stack analysis (spot detection + intensity extraction + classification): ~5–30 seconds per image, depending on image size and spot density
+- Full batch processing of one experiment (e.g., 96-well plate, ~96 images): ~2–5 minutes
+- NSB correction and `.xlsx` report generation: < 30 seconds
+
+These estimates are based on the cost of the underlying image-processing operations (`imgaussfilt` → adaptive `imbinarize` → `imopen` → `regionprops`) which are linear in image area and run on a single CPU thread.
 
 ---
 
