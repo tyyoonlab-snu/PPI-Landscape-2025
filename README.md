@@ -15,11 +15,17 @@ A batch-processing graphical application for quantifying single-molecule fluores
 
 In the manuscript, this tool was used to quantify fluorescent spots and verify that **TNF-α bound to Adalimumab and its variants existed in the expected trimeric state**, providing the experimental ground truth for downstream interpretation. The tool itself is general-purpose and can be applied to any single-molecule fluorescence experiment requiring spot detection and oligomeric-state classification.
 
-### Tool 2 — Python ML-Guided Library Navigation Pipeline (`python_pipeline/`)
+### Tool 2 — Python Library Landscape Analysis Pipeline (`python_pipeline/`)
 
-A Python pipeline that uses experimental measurements of **single and double mutants** to train an additive Ridge regression model. The model learns the contribution (weight) of each single–amino-acid substitution from this low-order data alone, and is then used to predict the fitness of the full combinatorial library *in silico*.
+A Python pipeline that turns tabular variant measurements into the fitness landscapes reported in the manuscript, and navigates them.
 
-The key result enabled by this tool is that **global top-tier variants can be recovered by screening only a drastically reduced subset of the combinatorial library**, rather than exhaustively measuring every combination. The pipeline also projects the combinatorial sequence space onto a topology-preserving 2D landscape via densMAP (UMAP) and categorizes variants by KMeans clustering to visualize the fitness landscape.
+The pipeline has three outputs:
+
+1. **A topology-preserving 2D landscape.** Combinatorial variants are encoded by position-specific physicochemical properties and projected with densMAP (UMAP).
+2. **Topographical regions of that landscape.** Local fitness statistics computed over each variant's nearest neighbours are used to delineate peak clusters, rugged interfaces and broad valleys, and continuous surfaces are rendered for visualization.
+3. **ML-guided recovery of top variants.** An additive Ridge regression model is trained on **single and double mutants only**, learning the contribution (weight) of each single–amino-acid substitution from this low-order data alone, and is then used to predict the fitness of the full combinatorial library *in silico*.
+
+The key result enabled by (3) is that **global top-tier variants can be recovered by screening only a drastically reduced subset of the combinatorial library**, rather than exhaustively measuring every combination.
 
 This tool takes a tabular CSV/Excel file of variant measurements as input — its measurements need not have been produced by Tool 1.
 
@@ -29,25 +35,27 @@ This tool takes a tabular CSV/Excel file of variant measurements as input — it
 
 ```
 PPI-Landscape-2025/
-├── matlab_scripts/                          # Tool 1: independent MATLAB image analysis GUI
-│   └── spotAnalysisApp_V35_1_Final.m        # GUI app for single-molecule fluorescence image analysis
-├── python_pipeline/                         # Tool 2: independent Python ML pipeline
-│   ├── analysis_pipeline.py                 # Command-line / IDE executable version
-│   └── Analysis_Pipeline_Cleaned.ipynb      # Jupyter / Colab notebook version (same logic)
-├── data/                                    # Sample datasets for demo runs (per-tool)
-│   ├── demo_image_root/                     # MATLAB demo: root folder of fluorescence images
-│   │   ├── Sample_Adalimumab_WT/            #   each subfolder = one well/condition, containing .tif files
+├── matlab_scripts/                            # Tool 1: independent MATLAB image analysis GUI
+│   └── spotAnalysisApp_V35_1_Final.m          # GUI app for single-molecule fluorescence image analysis
+├── python_pipeline/                           # Tool 2: independent Python analysis pipeline
+│   ├── Analysis_Pipeline_Cleaned.ipynb        # Reference implementation (Jupyter / Colab)
+│   ├── analysis_pipeline.py                   # Command-line / IDE equivalent
+│   ├── topographical_classification.py        # Local-statistics delineation of landscape regions
+│   └── fitness_landscape_visualization.py     # Continuous 3D surface and 2D top-view rendering
+├── data/                                      # Datasets for demo runs (per-tool)
+│   ├── demo_image_root/                       # MATLAB demo: root folder of fluorescence images
+│   │   ├── Sample_Adalimumab_WT/              #   each subfolder = one well/condition, containing .tif files
 │   │   │   ├── WT_07_AVG.tif
 │   │   │   ├── WT_08_AVG.tif
 │   │   │   └── ...
 │   │   ├── Sample_Variant/
 │   │   │   └── ...
-│   │   └── Control_NSB/                     #   subfolder designated as NSB control
+│   │   └── Control_NSB/                       #   subfolder designated as NSB control
 │   │       └── ...
-│   └── demo_library_measurements.csv        # Python demo: tabular variant measurements
-├── LICENSE                                  # MIT License
-├── README.md                                # Project overview and instructions
-└── requirements.txt                         # Python dependencies (applies to Tool 2 only)
+│   └── demo_library_measurements.csv          # Python demo: processed combinatorial library measurements
+├── LICENSE                                    # MIT License
+├── README.md                                  # Project overview and instructions
+└── requirements.txt                           # Python dependencies (applies to Tool 2 only)
 ```
 
 The two tools are released together for distribution convenience but operate independently. Users interested in only one of them need not install or run the other.
@@ -64,7 +72,9 @@ The two tools are released together for distribution convenience but operate ind
 - pandas
 - matplotlib
 - seaborn
+- scipy
 - scikit-learn
+- plotly
 - umap-learn == 0.5.11  *(with densMAP support)*
 - numba == 0.60.0
 
@@ -73,20 +83,19 @@ The two tools are released together for distribution convenience but operate ind
 **MATLAB pipeline**:
 - MATLAB R2024b (tested) with the Image Processing Toolbox
 - Likely compatible with earlier versions (R2021a+) since no R2024b-specific features are used, but this has not been independently verified
-- Image Processing Toolbox
 
 ### Tested environment
 
 The Python pipeline has been developed and tested **exclusively on Google Colab** (the default free-tier runtime, Linux backend with the standard pre-installed Python 3 environment). We have not independently verified the pipeline on other operating systems.
 
-Because the dependencies (`numpy`, `pandas`, `scikit-learn`, `umap-learn`, `numba`, `matplotlib`, `seaborn`) are all cross-platform Python packages, the pipeline is expected to run on any standard Python 3 environment (Linux, macOS, Windows) with `requirements.txt` installed. Users wishing to run the code locally are welcome to do so, but should be aware that the exact pinned versions of `umap-learn` and `numba` may interact differently with their local Python and BLAS libraries. **For maximum reproducibility, we recommend running the Python pipeline on Google Colab.**
+Because the dependencies are all cross-platform Python packages, the pipeline is expected to run on any standard Python 3 environment (Linux, macOS, Windows) with `requirements.txt` installed. Users wishing to run the code locally are welcome to do so, but should be aware that the exact pinned versions of `umap-learn` and `numba` may interact differently with their local Python and BLAS libraries. **For maximum reproducibility, we recommend running the Python pipeline on Google Colab.**
 
 The MATLAB pipeline has been developed and tested on:
 - **MATLAB R2024b** with the Image Processing Toolbox
 
 ### Hardware requirements
 
-**Non-standard hardware is not required.** The Python pipeline was developed and tested on the **default Google Colab free-tier runtime** (no GPU/TPU allocation; standard CPU instance with ~12 GB RAM). All steps — physicochemical vectorization, densMAP embedding, KMeans clustering, and Ridge regression — run on CPU within this default environment.
+**Non-standard hardware is not required.** The Python pipeline was developed and tested on the **default Google Colab free-tier runtime** (no GPU/TPU allocation; standard CPU instance with ~12 GB RAM). All steps — physicochemical vectorization, densMAP embedding, clustering, topographical classification, surface rendering, and Ridge regression — run on CPU within this default environment.
 
 For users running locally:
 - A standard desktop or laptop with **≥ 8 GB RAM** is sufficient for the demo dataset.
@@ -107,7 +116,7 @@ cd PPI-Landscape-2025
 pip install -r requirements.txt
 ```
 
-**Typical install time on Google Colab**: ~30–60 seconds. Most dependencies (`numpy`, `pandas`, `scikit-learn`, `matplotlib`, `seaborn`) are pre-installed in the Colab runtime, so `pip install -r requirements.txt` effectively only needs to install `umap-learn==0.5.11` and ensure `numba==0.60.0` is present. On a fresh local Python environment, expect ~2–4 minutes for full dependency resolution and installation.
+**Typical install time on Google Colab**: ~30–60 seconds. Most dependencies (`numpy`, `pandas`, `scipy`, `scikit-learn`, `matplotlib`, `seaborn`, `plotly`) are pre-installed in the Colab runtime, so `pip install -r requirements.txt` effectively only needs to install `umap-learn==0.5.11` and ensure `numba==0.60.0` is present. On a fresh local Python environment, expect ~2–4 minutes for full dependency resolution and installation.
 
 ### MATLAB pipeline
 
@@ -121,7 +130,7 @@ No separate installation step is required beyond having MATLAB R2024b (or a comp
 
 ### Python pipeline demo
 
-A small example dataset is provided in `data/demo_library_measurements.csv`. To run the demo:
+The processed measurements for the adalimumab HCDR2/HCDR3 combinatorial library (9,588 variants) are provided in `data/demo_library_measurements.csv`. To run the demo:
 
 #### Option A — Jupyter / Colab notebook *(recommended)*
 
@@ -129,19 +138,34 @@ A small example dataset is provided in `data/demo_library_measurements.csv`. To 
 jupyter notebook python_pipeline/Analysis_Pipeline_Cleaned.ipynb
 ```
 
-Or open the notebook directly in Google Colab via the **Open in Colab** button on GitHub.
+Or open the notebook directly in Google Colab via the **Open in Colab** button on GitHub. Run the sections in order; the upload cell in Section 2 accepts `data/demo_library_measurements.csv`.
 
-#### Option B — Python script
+#### Option B — Python scripts
 
 ```bash
-python python_pipeline/analysis_pipeline.py
+python python_pipeline/analysis_pipeline.py \
+    --input data/demo_library_measurements.csv --outdir output
+
+python python_pipeline/topographical_classification.py \
+    --input output/1_UMAP_2D_Coordinates.csv \
+    --output output/2_Topographical_Classification.csv
+
+python python_pipeline/fitness_landscape_visualization.py \
+    --input output/2_Topographical_Classification.csv --outdir output
 ```
 
-**Expected output**:
-- 2D densMAP embedding scatter plot showing the projected combinatorial sequence space, colored by KMeans clusters
-- Predictive recovery curve showing top-1% champion recovery rate as a function of training set size (≤ double mutants)
-- Tabular summary of cluster-wise mean affinity / productivity statistics (printed to console or notebook cell)
-- A `results/` directory containing PNG figures and CSV tables of the embedding coordinates and model predictions
+**Expected output** (written to `output/`):
+
+| File | Contents |
+| --- | --- |
+| `1_UMAP_2D_Coordinates.csv` | densMAP coordinates and cluster assignment per variant |
+| `2_Topographical_Classification.csv` | Local fitness statistics and topographical class per variant |
+| `Landscape3D_<metric>.html` | Interactive 3D fitness surface |
+| `TopView_<metric>.svg`, `TopView_Combined.svg` | 2D top-view contour maps |
+| `SourceData_Surface_<metric>.csv` | Interpolated matrix underlying each rendered surface |
+| `PanelB_Recovery.svg` | Top-1% recovery curve as a function of screening depth |
+
+A tabular summary of class-wise affinity and productivity statistics is printed to the console or notebook cell.
 
 **Expected run time on demo data** (default Google Colab CPU runtime, dataset size–dependent):
 
@@ -149,10 +173,12 @@ python python_pipeline/analysis_pipeline.py
 | --- | --- |
 | Data loading & preprocessing | < 5 seconds |
 | densMAP embedding (`n_neighbors=50`, `densmap=True`) | ~30 sec – 3 min |
-| KMeans clustering (`k=5`, on 2D coordinates) | < 5 seconds |
+| KMeans clustering (silhouette-selected *k*, on 2D coordinates) | ~5–20 seconds |
+| Topographical classification (30-NN local statistics + DBSCAN) | ~5–15 seconds |
+| Landscape rendering (150 × 150 grid, per metric) | ~10–20 seconds |
 | Ridge regression + recovery curve (100 ratios × 2 metrics) | ~10–30 seconds |
 | Figure rendering & saving | < 5 seconds |
-| **Total (end-to-end)** | **~1–5 minutes** |
+| **Total (end-to-end)** | **~2–6 minutes** |
 
 The densMAP step is the dominant cost and scales with the number of unique variants. For reference:
 - ~1,000 variants → end-to-end ~1 minute
@@ -192,14 +218,22 @@ These estimates are based on the cost of the underlying image-processing operati
 
 ### Running the Python pipeline on your own data
 
-1. Prepare your library measurement file as a CSV following the schema of `data/demo_library_measurements.csv`. Required columns:
-   - `sequence` — variant sequence or mutation identifier
-   - `affinity` — measured binding affinity (or occupancy)
-   - `productivity` — measured expression / productivity
-   - `n_mutations` — number of mutations from wild-type
-2. Edit the **User inputs** cell (notebook) or top-of-file constants (`analysis_pipeline.py`) to point to your CSV.
-3. Adjust filtering thresholds (e.g., minimum replicate count, expression cutoff) as appropriate for your dataset.
-4. Run the four pipeline stages sequentially. Each stage's output is the input for the next, so re-running from the top is safe.
+1. Prepare your library measurement file as a CSV or Excel file following the schema of `data/demo_library_measurements.csv`.
+
+   **Required:**
+   - `Mutation_Description` — variant identifier, given as underscore-separated single-mutation codes (e.g. `T52V_S55H_S100K`); the parental sequence is labelled `Parental`. If this column is absent, the first column of the file is used.
+   - At least one measurement column from `Normalized_Occupancy` (binding, normalized to parental), `Normalized_Expression` (productivity, normalized to parental), or `MPNN Z-Score`.
+
+   **Optional:**
+   - `Data_Quality` — per-measurement quality label. Rows labelled `Valid`, `Valid (Non-binding)` or `Valid; Valid (Non-binding)` are retained for all analyses; rows labelled `Invalid (Low expression)` are retained for expression analysis only, and their occupancy values are masked, since binding cannot be inferred from a non-expressing variant. If the column is absent, no quality filtering is applied.
+   - `*_Std` columns — per-variant standard deviations across replicates.
+   - Replicate rows sharing the same `Mutation_Description` are aggregated to mean and standard deviation automatically.
+
+2. Update the combinatorial design specification. The physicochemical encoding is defined by the `design_rules` dictionary in Section 3 of the notebook (`analysis_pipeline.py`: `perform_umap_clustering`), which lists each mutated position, its parental residue and the permitted substitutions. **This must match your library**, since the embedding is constructed from it rather than parsed from the data file.
+
+3. Adjust filtering thresholds and classification parameters as appropriate for your dataset. The topographical thresholds are exposed as module-level constants at the top of `topographical_classification.py`.
+
+4. Run the pipeline sections in order. Each section's output is the input for the next, so re-running from the top is safe.
 
 ### Running the MATLAB pipeline on your own data
 
@@ -224,10 +258,9 @@ These estimates are based on the cost of the underlying image-processing operati
 
 The two tools contribute to different parts of the manuscript and are reproduced independently.
 
-**Python ML pipeline results** (combinatorial library navigation and top-variant recovery curves):
-1. Obtain the full processed dataset from the corresponding author (see **Data Availability** below).
-2. Place it in `data/full_library_measurements.csv`.
-3. Run `Analysis_Pipeline_Cleaned.ipynb` end-to-end with default parameters and fixed random seeds (already set in Section 1 of the notebook).
+**Python pipeline results** (fitness landscapes, topographical regions, and top-variant recovery curves):
+1. Use `data/demo_library_measurements.csv`, which contains the processed measurements for the full combinatorial library reported in the manuscript.
+2. Run `Analysis_Pipeline_Cleaned.ipynb` end-to-end with default parameters and fixed random seeds (already set in Section 1 of the notebook).
 
 **MATLAB image analysis results** (TNF-α trimer-state quantification on Adalimumab variants):
 1. Obtain the raw `.tif` image stacks organized in the required root/subfolder structure from the corresponding author (see **Data Availability** below).
@@ -238,17 +271,29 @@ The two tools contribute to different parts of the manuscript and are reproduced
 
 ## Pipeline Structure (Python)
 
-Both `Analysis_Pipeline_Cleaned.ipynb` and `analysis_pipeline.py` are organized into four sequential sections:
+The pipeline is organized into six sequential sections. `Analysis_Pipeline_Cleaned.ipynb` is the reference implementation; the `.py` modules expose the same steps for command-line use.
 
-1. **Libraries & Imports** — installs pinned dependencies and fixes random seeds.
-2. **Data Upload & Preprocessing** — applies Data Quality + biological filtering and aggregates replicates.
-3. **UMAP Embedding & KMeans Clustering** — projects the combinatorial space to 2D and assigns clusters.
-4. **Predictive Recovery from Low-Order (≤ Double) Mutants** — trains the additive Ridge model and reports top 1% recovery curves.
+1. **Libraries & Imports** — installs pinned dependencies and fixes random seeds (`random_state = 42` throughout).
+2. **Data Upload & Preprocessing** — applies quality and biological filtering and aggregates replicates.
+3. **densMAP Embedding & KMeans Clustering** — projects the combinatorial space to 2D and assigns exploratory clusters.
+4. **Topographical Classification** — delineates peak clusters, rugged interfaces and broad valleys from local fitness statistics.
+5. **Fitness Landscape Rendering** — builds the continuous 3D surfaces and 2D top-view contour maps.
+6. **Predictive Recovery from Low-Order (≤ Double) Mutants** — trains the additive Ridge model and reports top-1% recovery curves.
+
+> **Note on Section 3.** The KMeans step provides an exploratory partition of the embedding and is retained for completeness. The topographical regions reported in the manuscript are assigned in Section 4, not by KMeans.
 
 ### Key methodological features
 
 - **Biological preprocessing & filtering** — curates experimental measurements by strictly enforcing biological constraints (e.g., masking occupancy/affinity values for variants that fail to express, so non-expressing variants do not contaminate the binding signal).
-- **Physicochemical vectorization & densMAP embedding** — transforms combinatorial mutations into high-dimensional numerical vectors based on position-specific physicochemical properties (Kyte–Doolittle hydropathy, residue volume, and isoelectric point). The sequence space is then projected onto a topology-preserving 2D landscape with `densMAP` (UMAP) and systematically categorized via KMeans clustering, allowing visual inspection of the fitness landscape.
+
+- **Physicochemical vectorization & densMAP embedding** — transforms combinatorial mutations into high-dimensional numerical vectors based on position-specific physicochemical properties (Kyte–Doolittle hydropathy, residue volume in Å³, and isoelectric point), with parental residues placed at the origin of the property space. The standardized vectors are projected onto a topology-preserving 2D landscape with `densMAP` (UMAP; `n_neighbors=50`, `min_dist=0.1`, `spread=2.0`).
+
+- **Topographical classification** — for each variant, the local mean and local standard deviation of log₂-normalized relative occupancy are computed over its 30 nearest neighbours in the embedding. Regions of high local variability are assigned as rugged interfaces; among the remainder, the highest and lowest local means define peak clusters and broad valleys. A density-based filter (DBSCAN) retains only spatially contiguous members of each class, so that the reported regions correspond to coherent areas of the landscape rather than scattered points. Variants with no detectable binding are assigned a floor occupancy of 0.05 rather than being discarded, so that non-binding regions still contribute to their neighbourhood statistics.
+
+- **Continuous landscape rendering** — measured metrics are interpolated onto a regular 150 × 150 grid by distance-weighted k-nearest-neighbour regression (*k* = 15) followed by Gaussian smoothing (σ = 1.2 grid units), and expressed in standard-deviation units relative to the parental clone.
+
+  > **Interpolated surfaces.** The grid extends 1.5 densMAP units beyond the sampled range and no convex-hull or density masking is applied, so parts of a rendered surface lying outside the sampled sequence space are inferred rather than measured. All quantitative claims about landscape ruggedness and navigability in the manuscript are computed on the discrete measured variants, not on these surfaces. The interpolated matrix underlying each surface is written to `SourceData_Surface_<metric>.csv`.
+
 - **ML-guided top-variant recovery from reduced screening** — the core insight is that a Ridge regression model trained **only on single and double mutants** can learn per-position amino-acid weights that capture the fundamental contributions and pairwise epistatic interactions driving fitness. Using these learned weights, the model predicts the fitness of the full combinatorial library *in silico* and ranks variants accordingly. This enables effective recovery of the global top 1% variants in both affinity and productivity **without exhaustive measurement of the combinatorial library** — only the low-order (≤ double) mutant subset needs to be experimentally screened.
 
 ### MATLAB image analysis key features
@@ -262,7 +307,11 @@ Both `Analysis_Pipeline_Cleaned.ipynb` and `analysis_pipeline.py` are organized 
 
 ## Data Availability
 
-Representative processed datasets for demo purposes are provided in `data/`. Raw image stacks and the full experimental dataset are available from the corresponding author upon reasonable request.
+`data/demo_library_measurements.csv` contains the processed measurements for the adalimumab HCDR2/HCDR3 combinatorial library analysed in the manuscript, including densMAP coordinates, normalized occupancy and expression metrics with replicate standard deviations, ProteinMPNN compatibility scores, local fitness statistics, and topographical class assignments.
+
+`data/demo_image_root/` provides example single-molecule image stacks illustrating the folder structure expected by the MATLAB analysis GUI.
+
+Raw image stacks for the full dataset are available from the corresponding author upon reasonable request.
 
 ---
 
