@@ -10,7 +10,7 @@ Pipeline position
 -----------------
 Consumes the 2D embedding produced by Section 3 (`1_UMAP_2D_Coordinates.csv`)
 and reproduces the `Local_Mean_Aff`, `Local_Std_Aff` and
-`Topolgy_Classification` columns distributed with
+`Topology_Classification` columns distributed with
 `data/demo_library_measurements.csv`.
 
 Corresponding manuscript items
@@ -167,14 +167,14 @@ def classify_topography(df,
     classification[is_peak] = CLASS_PEAK
     classification[is_rugged] = CLASS_RUGGED
 
-    df["Topolgy_Classification"] = classification
+    df["Topology_Classification"] = classification
     return df
 
 
 def summarize(df):
     """Print class sizes and the fitness range spanned by each class."""
     summary = (
-        df.groupby("Topolgy_Classification")[["Local_Mean_Aff", "Local_Std_Aff"]]
+        df.groupby("Topology_Classification")[["Local_Mean_Aff", "Local_Std_Aff"]]
         .agg(["count", "min", "max", "mean"])
         .round(3)
     )
@@ -191,7 +191,7 @@ def validate_against_reference(df, reference_path):
     came from the notebook or from analysis_pipeline.py.
     """
     ref = pd.read_csv(reference_path)
-    if "Topolgy_Classification" not in ref.columns:
+    if "Topology_Classification" not in ref.columns:
         print("Reference file carries no classification column; skipping.")
         return None
 
@@ -202,11 +202,11 @@ def validate_against_reference(df, reference_path):
         return None
 
     merged = df.merge(
-        ref[[id_col, "Topolgy_Classification"]],
+        ref[[id_col, "Topology_Classification"]],
         on=id_col, how="inner", suffixes=("", "_ref"),
     )
     agreement = (
-        merged["Topolgy_Classification"] == merged["Topolgy_Classification_ref"]
+        merged["Topology_Classification"] == merged["Topology_Classification_ref"]
     ).mean()
     print(f"\nAgreement with reference classification: {agreement * 100:.1f}% "
           f"(n = {len(merged)})")
