@@ -183,11 +183,22 @@ def summarize(df):
     return summary
 
 
-def validate_against_reference(df, reference_path, id_col="Mutation_Description"):
-    """Optional consistency check against deposited landscape data."""
+def validate_against_reference(df, reference_path):
+    """Optional consistency check against deposited landscape data.
+
+    Matches rows on whichever identifier column both tables share
+    ("Mutation_Description" or "ID"), so the check works whether the input
+    came from the notebook or from analysis_pipeline.py.
+    """
     ref = pd.read_csv(reference_path)
     if "Topolgy_Classification" not in ref.columns:
         print("Reference file carries no classification column; skipping.")
+        return None
+
+    id_col = next((c for c in ("Mutation_Description", "ID")
+                   if c in df.columns and c in ref.columns), None)
+    if id_col is None:
+        print("No shared identifier column with the reference; skipping check.")
         return None
 
     merged = df.merge(
