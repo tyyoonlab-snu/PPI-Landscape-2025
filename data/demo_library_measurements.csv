@@ -1,4 +1,4 @@
-Mutation_Description,UMAP1,UMAP2,Normalized_Occupancy,Normalized_Occupancy_Std,Normalized_Expression,Normalized_Expression_Std,Occupancy,Occupancy_Std,MPNN Raw Score,MPNN Z-Score,Relative_MPNN_score,Topolgy_Classification,Local_Mean_Aff,Local_Std_Aff
+Mutation_Description,UMAP1,UMAP2,Normalized_Occupancy,Normalized_Occupancy_Std,Normalized_Expression,Normalized_Expression_Std,Occupancy,Occupancy_Std,MPNN Raw Score,MPNN Z-Score,Relative_MPNN_score,Topology_Classification,Local_Mean_Aff,Local_Std_Aff
 T52V_S55H_H57W_I58H,19.93673,2.3233407,0,0,0.217203704,0.09450763,0,0,1.262557533,-0.397868615,0.033618772,Broad Valley,-2.641947206,1.691063007
 H57W_I58D_S100T_S106G_L108S,16.033905,6.2521086,0,0,0.115613734,0.056970927,0,0,1.290930906,0.841224109,0.061992145,Broad Valley,-2.579530669,1.096548956
 H57W_I58D_S103P_S106G_L108S,14.449904,14.870891,0,0,0.060696342,0.029306903,0,0,1.302983004,1.367550914,0.074044243,Broad Valley,-3.00904994,1.218037133
